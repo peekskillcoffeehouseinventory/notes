@@ -1,0 +1,11 @@
+{
+  "name": "PCH Notes",
+  "short_name": "PCH Notes",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FBF9F3",
+  "theme_color": "#122B2A",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

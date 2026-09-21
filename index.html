@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>PCH Notes</title>
+
+<!-- Add-to-home-screen support -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PCH Notes">
+<meta name="theme-color" content="#122B2A">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --forest-deep: #122B2A;
+    --forest: #1B3B3A;
+    --moss: #5D7C5E;
+    --slate: #3F6690;
+    --ochre: #B58347;
+    --ink: #1E2B26;
+    --ink-soft: #56685F;
+    --danger: #A24B3B;
+    --paper: #FBF9F3;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--forest-deep);
+    font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .app {
+    width: 100%;
+    max-width: 460px;
+    min-height: 100%;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .app-header {
+    padding: 20px 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .app-header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--forest-deep);
+    margin: 0;
+  }
+  .app-header .who {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .notion-link {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--slate);
+    text-decoration: none;
+  }
+
+  /* Quick capture */
+  .capture-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 16px;
+  }
+  .capture-input {
+    flex: 1;
+    min-width: 0;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    border: 1px solid rgba(30,43,38,0.16);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .capture-input:focus { outline: 2px solid var(--slate); outline-offset: 1px; }
+  .capture-btn {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--forest-deep);
+    border: none;
+    border-radius: 10px;
+    padding: 0 18px;
+    cursor: pointer;
+  }
+  .capture-btn:active { background: var(--forest); }
+  .capture-btn:disabled { opacity: 0.5; }
+
+  .sync-status {
+    padding: 0 20px 10px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    min-height: 14px;
+  }
+  .sync-status.error { color: var(--danger); }
+
+  /* Ruled paper list */
+  .notepad {
+    flex: 1;
+    margin: 0 16px 16px;
+    border-radius: 14px;
+    background:
+      repeating-linear-gradient(
+        rgba(63,102,144,0.16) 0px, rgba(63,102,144,0.16) 1px,
+        transparent 1px, transparent 34px
+      ),
+      linear-gradient(90deg, transparent 0px, transparent 26px, rgba(162,75,59,0.28) 26px, rgba(162,75,59,0.28) 27px, transparent 27px),
+      #fff;
+    background-position: 0 14px, 0 0, 0 0;
+    padding: 14px 16px 14px 34px;
+    box-shadow: 0 2px 10px rgba(18,43,42,0.08);
+    overflow-y: auto;
+  }
+  .note-row {
+    display: flex;
+    flex-direction: column;
+    min-height: 34px;
+    line-height: 34px;
+    border-bottom: none;
+  }
+  .note-time {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--slate);
+    line-height: 14px;
+    margin-top: 4px;
+  }
+  .note-text {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 20px;
+    padding-bottom: 8px;
+  }
+  .empty-state {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    padding: 40px 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- First-run name prompt -->
+<div class="onboard-overlay" id="onboardOverlay" style="position:fixed;inset:0;z-index:1000;background:rgba(18,43,42,0.6);display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="width:100%;max-width:340px;background:#FBF9F3;border-radius:16px;padding:24px;">
+    <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--forest-deep);">Welcome 👋</div>
+    <div style="font-size:12px;color:var(--ink-soft);margin:2px 0 16px;">These notes are just yours, private to this device.</div>
+
+    <label style="display:block;font-size:11.5px;font-weight:700;color:var(--forest-deep);margin-bottom:5px;">Your name</label>
+    <input type="text" id="onboardName" placeholder="e.g. Shaun" style="width:100%;font-family:'Manrope',sans-serif;font-size:14px;border:1px solid rgba(30,43,38,0.15);border-radius:8px;padding:10px 12px;">
+
+    <label style="display:block;font-size:11.5px;font-weight:700;color:var(--forest-deep);margin:14px 0 5px;">Your personal Notion link <span style="font-weight:400;color:var(--ink-soft);">(optional)</span></label>
+    <input type="text" id="onboardNotion" placeholder="Paste your Notion page link" style="width:100%;font-family:'Manrope',sans-serif;font-size:14px;border:1px solid rgba(30,43,38,0.15);border-radius:8px;padding:10px 12px;">
+
+    <button type="button" onclick="completeOnboarding()" style="width:100%;margin-top:18px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#fff;background:var(--forest-deep);border:none;border-radius:9px;padding:11px;cursor:pointer;">Get started →</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="app-header">
+    <div>
+      <h1>📌 My Notes</h1>
+      <div class="who" id="whoLine"></div>
+    </div>
+    <a href="#" id="notionLinkOut" class="notion-link" target="_blank" rel="noopener" style="display:none;">Open in Notion →</a>
+  </div>
+
+  <div class="capture-row">
+    <input type="text" id="captureInput" class="capture-input" placeholder="Jot something down…" autocomplete="off">
+    <button type="button" id="captureBtn" class="capture-btn" onclick="addNote()">Save</button>
+  </div>
+  <div class="sync-status" id="syncStatus"></div>
+
+  <div class="notepad" id="notepad">
+    <div class="empty-state">Loading your notes…</div>
+  </div>
+</div>
+
+<script>
+  var BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyn9JH3LvqIODpkXg0Q79oqI6gNJjZ5Rj2RvEAMwdbwtAFaxNuOoQIcnM4tMue6l0E/exec';
+  var STORAGE_USER_KEY = 'pchUser';
+  var currentUser = null;
+
+  var notepad = document.getElementById('notepad');
+  var captureInput = document.getElementById('captureInput');
+  var captureBtn = document.getElementById('captureBtn');
+  var syncStatus = document.getElementById('syncStatus');
+
+  function formatStamp(ts) {
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined, { weekday: 'short' }) + ' ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function renderNotes(notes) {
+    if (!notes.length) {
+      notepad.innerHTML = '<div class="empty-state">Nothing yet — jot down your first note above ✏️</div>';
+      return;
+    }
+    // Newest first, for a quick glance at what you just captured
+    notes.sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
+    notepad.innerHTML = '';
+    notes.forEach(function (n) {
+      var row = document.createElement('div');
+      row.className = 'note-row';
+      row.innerHTML = '<span class="note-time"></span><span class="note-text"></span>';
+      row.querySelector('.note-time').textContent = formatStamp(n.timestamp);
+      row.querySelector('.note-text').textContent = n.text;
+      notepad.appendChild(row);
+    });
+  }
+
+  function loadNotes() {
+    syncStatus.textContent = 'Syncing…';
+    syncStatus.className = 'sync-status';
+    fetch(BACKEND_URL + '?action=getNotes&user=' + encodeURIComponent(currentUser.name))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) throw new Error(data.error || 'Failed to load notes');
+        renderNotes(data.result || []);
+        syncStatus.textContent = '';
+      })
+      .catch(function (err) {
+        syncStatus.textContent = "Couldn't sync — " + err.message;
+        syncStatus.className = 'sync-status error';
+        notepad.innerHTML = '<div class="empty-state">Couldn\'t load your notes right now.</div>';
+      });
+  }
+
+  window.addNote = function () {
+    var text = captureInput.value.trim();
+    if (!text || !currentUser) return;
+    captureBtn.disabled = true;
+    syncStatus.textContent = 'Saving…';
+    syncStatus.className = 'sync-status';
+
+    fetch(BACKEND_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'addNote', user: currentUser.name, text: text })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) throw new Error(data.error || 'Failed to save');
+        captureInput.value = '';
+        syncStatus.textContent = '';
+        loadNotes();
+      })
+      .catch(function (err) {
+        syncStatus.textContent = "Couldn't save — " + err.message;
+        syncStatus.className = 'sync-status error';
+      })
+      .finally(function () { captureBtn.disabled = false; });
+  };
+
+  captureInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); window.addNote(); }
+  });
+
+  function hydrate(user) {
+    currentUser = user;
+    document.getElementById('whoLine').textContent = user.name + "'s notes";
+    var notionLink = document.getElementById('notionLinkOut');
+    if (user.notion) {
+      notionLink.href = user.notion;
+      notionLink.style.display = '';
+    }
+    loadNotes();
+  }
+
+  window.completeOnboarding = function () {
+    var nameInput = document.getElementById('onboardName');
+    var notionInput = document.getElementById('onboardNotion');
+    var name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); nameInput.style.outline = '2px solid var(--danger)'; return; }
+
+    var user = { name: name, notion: notionInput.value.trim() || null };
+    localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user));
+    document.getElementById('onboardOverlay').style.display = 'none';
+    hydrate(user);
+  };
+
+  var savedUser = null;
+
+  // A link carrying ?user=Name always wins — this is what makes each
+  // person's Notion embed show up as them, regardless of which device
+  // is currently viewing that Notion page.
+  var urlParams = new URLSearchParams(window.location.search);
+  var urlUser = urlParams.get('user');
+
+  if (urlUser) {
+    document.getElementById('onboardOverlay').style.display = 'none';
+    hydrate({ name: urlUser, notion: null });
+  } else {
+    try { savedUser = JSON.parse(localStorage.getItem(STORAGE_USER_KEY)); } catch (e) {}
+    if (savedUser && savedUser.name) {
+      document.getElementById('onboardOverlay').style.display = 'none';
+      hydrate(savedUser);
+    }
+  }
+</script>
+</body>
+</html>
