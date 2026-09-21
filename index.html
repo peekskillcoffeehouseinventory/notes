@@ -137,25 +137,44 @@
   }
   .note-row {
     display: flex;
-    flex-direction: column;
-    min-height: 34px;
+    align-items: baseline;
+    gap: 8px;
+    height: 34px;
     line-height: 34px;
-    border-bottom: none;
+    overflow: hidden;
   }
   .note-time {
     font-size: 10.5px;
     font-weight: 700;
     color: var(--slate);
-    line-height: 14px;
-    margin-top: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
   .note-text {
-    font-size: 14.5px;
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
     font-weight: 500;
     color: var(--ink);
-    line-height: 20px;
-    padding-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+  .note-delete {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(162,75,59,0.12);
+    color: var(--danger);
+    font-size: 13px;
+    line-height: 20px;
+    text-align: center;
+    padding: 0;
+    cursor: pointer;
+  }
+  .note-delete:hover { background: rgba(162,75,59,0.22); }
   .empty-state {
     text-align: center;
     color: var(--ink-soft);
@@ -230,11 +249,34 @@
     notes.forEach(function (n) {
       var row = document.createElement('div');
       row.className = 'note-row';
-      row.innerHTML = '<span class="note-time"></span><span class="note-text"></span>';
+      row.innerHTML = '<span class="note-time"></span><span class="note-text"></span><button type="button" class="note-delete" title="Delete">×</button>';
       row.querySelector('.note-time').textContent = formatStamp(n.timestamp);
       row.querySelector('.note-text').textContent = n.text;
+      row.querySelector('.note-delete').addEventListener('click', function () {
+        deleteNoteById(n.id);
+      });
       notepad.appendChild(row);
     });
+  }
+
+  function deleteNoteById(id) {
+    if (!currentUser) return;
+    syncStatus.textContent = 'Deleting…';
+    syncStatus.className = 'sync-status';
+    fetch(BACKEND_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteNote', user: currentUser.name, id: id })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) throw new Error(data.error || 'Failed to delete');
+        syncStatus.textContent = '';
+        loadNotes();
+      })
+      .catch(function (err) {
+        syncStatus.textContent = "Couldn't delete — " + err.message;
+        syncStatus.className = 'sync-status error';
+      });
   }
 
   function loadNotes() {
